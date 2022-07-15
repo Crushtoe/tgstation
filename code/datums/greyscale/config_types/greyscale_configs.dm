@@ -599,3 +599,8 @@
 	name = "Worn Tape Piece"
 	icon_file = 'icons/obj/tapes.dmi'
 	json_config = 'code/datums/greyscale/json_configs/tape_piece_spikes_worn.json'
+
+/datum/greyscale_config/balloon
+	name = "balloon"
+	icon_file = 'icons/obj/balloons.dmi'
+	json_config = 'code/datums/greyscale/json_configs/balloons.json'

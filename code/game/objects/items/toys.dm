@@ -16,7 +16,7 @@
  * Toy big red button
  * Beach ball
  * Toy xeno
- *      Kitty toys!
+ * Kitty toys!
  * Snowballs
  * Clockwork Watches
  * Toy Daggers
@@ -113,38 +113,101 @@
 		inhand_icon_state = "balloon-empty"
 	return ..()
 
-#define BALLOON_COLORS list("red", "blue", "green", "yellow")
+/*
+ * Normal Balloons
+ */
 
 /obj/item/toy/balloon
 	name = "balloon"
-	desc = "No birthday is complete without it."
-	icon = 'icons/obj/balloons.dmi'
+	desc = "An uninflated balloon. Kind of sad, isn't it?"
 	icon_state = "balloon"
-	inhand_icon_state = "balloon"
 	lefthand_file = 'icons/mob/inhands/balloons_lefthand.dmi'
 	righthand_file = 'icons/mob/inhands/balloons_righthand.dmi'
-	w_class = WEIGHT_CLASS_BULKY
+	inhand_icon_state = "balloon"
 	throwforce = 0
 	throw_speed = 3
 	throw_range = 7
 	force = 0
-	var/random_color = TRUE
+	var/inflated = FALSE
+	var/twistable = TRUE //can we turn it into balloon art
+	greyscale_config = /datum/greyscale_config/balloon
+	greyscale_colors = "#555555"
 
-/obj/item/toy/balloon/attackby(obj/item/I, mob/user, params)
-	if(istype(I, /obj/item/ammo_casing/caseless/foam_dart) && ismonkey(user))
-		pop_balloon(monkey_pop = TRUE)
+/obj/item/toy/balloon/attack_self(mob/living/user)
+	if(!user.is_holding(src))
+		return ..()
+
+	if(!src.inflated)
+		if(!HAS_TRAIT_FROM(user, TRAIT_NOBREATH, SPECIES_TRAIT) || !user.getorganslot(ORGAN_SLOT_LUNGS)) // no breathing? no inflating a balloon
+			to_chat(user, span_notice("You blow up \the [src]."))
+			src.desc = "No birthday is complete without it."
+			icon_state = "balloon"
+			inhand_icon_state = "balloon"
+			src.w_class = WEIGHT_CLASS_BULKY
+			src.inflated = TRUE
+
+	else if(twistable)
+		var/list/radial_options = list(
+		"Balloon Snake" = image(icon = 'icons/obj/balloons.dmi', icon_state = "snake"),
+		"Balloon Dog" = image(icon = 'icons/obj/balloons.dmi', icon_state = "dog"),
+		"Balloon Fish" = image(icon = 'icons/obj/balloons.dmi', icon_state = "fish"),
+		"Balloon Sword" = image(icon = 'icons/obj/balloons.dmi', icon_state = "sword")
+		)
+
+		var/chosen_balloon = show_radial_menu(user, src, radial_options, require_near = TRUE, tooltips = TRUE)
+		switch(chosen_balloon)
+			if("Balloon Snake")
+				name = "balloon snake"
+				desc = "It may not look-it, but this is a very skillfully twisted snake."
+				icon_state = "snake"
+				inhand_icon_state = "balloon_animal"
+				twistable = FALSE
+			if("Balloon Dog")
+				name = "balloon dog"
+				desc = "Seems more like a rub than pat kind of dog."
+				icon_state = "dog"
+				inhand_icon_state = "balloon_animal"
+				twistable = FALSE
+			if("Balloon Fish")
+				name = "balloon fish"
+				desc = "How do you even twist a single balloon into this?"
+				icon_state = "fish"
+				twistable = FALSE
+				inhand_icon_state = "balloon_animal"
+			if("Balloon Sword")
+				name = "balloon sword"
+				desc = "Avast, landlubber! Give me all yer chocolate dubloons!"
+				icon_state = "sword"
+				inhand_icon_state = "balloon_sword"
+				twistable = FALSE
+
+
+/obj/item/toy/balloon/attackby(obj/item/item, mob/user, params)
+	if(src.inflated)
+		if(istype(item, /obj/item/ammo_casing/caseless/foam_dart) && ismonkey(user))
+			pop_balloon(monkey_pop = TRUE)
+		else
+			return ..()
 	else
 		return ..()
+
 
 /obj/item/toy/balloon/hitby(atom/movable/AM, skipcatch, hitpush, blocked, datum/thrownthing/throwingdatum)
-	if(ismonkey(throwingdatum.thrower) && istype(AM, /obj/item/ammo_casing/caseless/foam_dart))
-		pop_balloon(monkey_pop = TRUE)
+	if(src.inflated)
+		if(ismonkey(throwingdatum.thrower) && istype(AM, /obj/item/ammo_casing/caseless/foam_dart))
+			pop_balloon(monkey_pop = TRUE)
+		else
+			return ..()
 	else
 		return ..()
 
-/obj/item/toy/balloon/bullet_act(obj/projectile/P)
-	if((istype(P,/obj/projectile/bullet/p50) || istype(P,/obj/projectile/bullet/reusable/foam_dart)) && ismonkey(P.firer))
-		pop_balloon(monkey_pop = TRUE)
+
+/obj/item/toy/balloon/bullet_act(obj/projectile/projectile)
+	if(src.inflated)
+		if((istype(projectile, /obj/projectile/bullet/p50) || istype(projectile,/obj/projectile/bullet/reusable/foam_dart)) && ismonkey(projectile.firer))
+			pop_balloon(monkey_pop = TRUE)
+		else
+			return ..()
 	else
 		return ..()
 
@@ -156,25 +219,20 @@
 
 /obj/item/toy/balloon/Initialize(mapload)
 	. = ..()
-	if(random_color)
-		var/chosen_balloon_color = pick(BALLOON_COLORS)
-		name = "[chosen_balloon_color] [name]"
-		icon_state = "[icon_state]_[chosen_balloon_color]"
-		inhand_icon_state = icon_state
 
 /obj/item/toy/balloon/corgi
 	name = "corgi balloon"
 	desc = "A balloon with a corgi face on it. For the all year good boys."
 	icon_state = "corgi"
 	inhand_icon_state = "corgi"
-	random_color = FALSE
+	twistable = FALSE
 
 /obj/item/toy/balloon/syndicate
 	name = "syndicate balloon"
 	desc = "There is a tag on the back that reads \"FUK NT!11!\"."
 	icon_state = "syndballoon"
 	inhand_icon_state = "syndballoon"
-	random_color = FALSE
+	twistable = FALSE
 
 /obj/item/toy/balloon/syndicate/pickup(mob/user)
 	. = ..()
@@ -197,9 +255,7 @@
 	desc = "A half inflated balloon about a boyband named Arreyst that was popular about ten years ago, famous for making fun of red jumpsuits as unfashionable."
 	icon_state = "arrestballoon"
 	inhand_icon_state = "arrestballoon"
-	random_color = FALSE
-
-#undef BALLOON_COLORS
+	twistable = FALSE
 
 /*
 * Captain's Aid
