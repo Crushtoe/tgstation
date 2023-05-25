@@ -36,6 +36,7 @@ map icebox
 endmap
 
 map tramstation
+	default
 	minplayers 35
 	votable
 endmap
@@ -46,8 +47,8 @@ map northstar
 endmap
 
 
-map runtimestation
+#map runtimestation
 endmap
 
-map multiz_debug
+#map multiz_debug
 endmap
